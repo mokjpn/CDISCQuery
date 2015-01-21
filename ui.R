@@ -26,7 +26,7 @@ shinyUI(fluidPage(
               tableOutput('searchResult1')),
     tabPanel('Standard', 
               tableOutput('searchResult2')),
-    tabPanel('Config', 
+    tabPanel('Validation', 
              tableOutput('searchResult3'))
     )
   , width=12))
