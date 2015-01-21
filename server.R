@@ -20,11 +20,13 @@ shinyServer(function(input, output) {
     query <- paste("
 PREFIX mms: <http://rdf.cdisc.org/mms#>
 PREFIX cts:<http://rdf.cdisc.org/ct/schema#>
-SELECT  ?id ?SubmissionValue ?Definition
+SELECT  ?id ?SubmissionValue ?Definition ?domainsubv
 WHERE
 {
   ?id cts:cdiscDefinition ?Definition FILTER regex(?Definition,'", interm(),"','i') .
   ?id cts:cdiscSubmissionValue ?SubmissionValue .
+  ?id mms:inValueDomain ?valuedomain .
+  ?valuedomain cts:cdiscSubmissionValue ?domainsubv .
                    } LIMIT 300",sep="")
   ns <- c(
     'cdash','<http://rdf.cdisc.org/cdash-terminology#>',
@@ -35,8 +37,25 @@ WHERE
     'cts','<http://rdf.cdisc.org/ct/schema#>')
     d1 <- SPARQL(url="http://axis.md.tsukuba.ac.jp/ql/term/query",
                 query=query,  ns=ns)
+    ids <- unlist(sapply(1:nrow(d1$results), function(x) {
+      id <- d1$results[x, "id"] 
+      subv <- d1$results[x,"domainsubv"]
+      idsplit <- strsplit(id, '(\\.|:)')[[1]]
+      code1 <- idsplit[2]
+      category <- idsplit[1]
+      if(category == "sdtm")
+        link <- paste('<a href="http://evs.nci.nih.gov/ftp1/CDISC/SDTM/SDTM%20Terminology.html#CL.', code1, ".", subv, '">sdtm:', code1, ".", subv, "</a>", sep="")
+      if(category == "cdash")
+        link <- paste('<a href="http://evs.nci.nih.gov/ftp1/CDISC/SDTM/CDASH%20Terminology.html#CL.', code1, ".", subv, '">cdash:', code1, ".", subv, "</a>", sep="")
+      if(category == "glossary")
+        link <- paste('<a href="http://evs.nci.nih.gov/ftp1/CDISC/Clinical_Data_Element_Glossary/Clinical%20Data%20Element%20Glossary.html#CL.', code1, ".", subv, '">glossary:', code1, ".", subv, "</a>", sep="")
+      if(category == "coa")
+        link <- paste('<a href="http://evs.nci.nih.gov/ftp1/CDISC/COA/COA%20Terminology.html#CL.', code1, ".", subv, '">coa:', code1, ".", subv, "</a>", sep="")
+      return(link)
+    }))
+    d1$results$id <- ids
     d1$results
-  })
+  }, sanitize.text.function = function(x) x)
 
   output$searchResult2 <- renderTable({
     query <- paste("
