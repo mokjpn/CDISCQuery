@@ -16,7 +16,23 @@ shinyServer(function(input, output) {
     else
       interm <- paste(".*",input$term,".*",sep="")
   })
-  output$searchResult1 <- renderDataTable({
+    
+  intermMatch <- reactive({
+    words <- strsplit(input$term, " +")[[1]]
+    if(length(words)>1)
+      interm <- paste("(",paste(words,collapse="|"),")",sep="")
+    else
+      interm <- paste("(",input$term,")",sep="")
+  })
+  
+dto <- "function(nRow, aData,index) {
+                $('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+                $('td:eq(1)',nRow).html(aData[1].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+                $('td:eq(2)',nRow).html(aData[2].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+              }"
+
+output$searchResult1 <- renderDataTable({
+    
     query <- paste("
 PREFIX mms: <http://rdf.cdisc.org/mms#>
 PREFIX cts:<http://rdf.cdisc.org/ct/schema#>
@@ -38,7 +54,8 @@ WHERE
     'cts','<http://rdf.cdisc.org/ct/schema#>')
     d1 <- SPARQL(url="http://axis.md.tsukuba.ac.jp/ql/term/query",
                 query=query,  ns=ns)
-    ids <- unlist(sapply(1:nrow(d1$results), function(x) {
+    if(nrow(d1$results)>0) {
+      ids <- unlist(sapply(1:nrow(d1$results), function(x) {
       id <- d1$results[x, "id"] 
       subv <- d1$results[x,"domainsubv"]
       idsplit <- strsplit(id, '(\\.|:)')[[1]]
@@ -54,9 +71,16 @@ WHERE
         link <- paste('<a href="http://evs.nci.nih.gov/ftp1/CDISC/COA/COA%20Terminology.html#CL.', code1, ".", subv, '">coa:', code1, ".", subv, "</a>", sep="")
       return(link)
     }))
-    d1$results$id <- ids
-    d1$results
-  },options=list(createdRow=I("function(nRow, aData,index) {$('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>'));}")))
+      d1$results$id <- ids
+    }
+    d1$results$domainsubv <- NULL
+  if(intermMatch() != "()") {
+    write(intermMatch(),stderr())
+    d1$results$SubmissionValue <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$SubmissionValue,ignore.case=TRUE)
+  d1$results$Definition <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Definition,ignore.case=TRUE)
+  }
+  d1$results
+  },options=list(createdRow=I(dto)))
   #, sanitize.text.function = function(x) x)
 
   output$searchResult2 <- renderDataTable({
@@ -78,8 +102,14 @@ ns <- c(
 
     d2 <- SPARQL(url="http://axis.md.tsukuba.ac.jp/ql/phuse/query",
                  query=query,  ns=ns)
+if(intermMatch() != "()") {
+  write(intermMatch(),stderr())
+  d2$results$DataElementName <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementName,ignore.case=TRUE)
+  d2$results$DataElementDescription <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementDescription,ignore.case=TRUE)
+}
+
     d2$results
-  })
+  },options=list(createdRow=I(dto)))
 
 output$searchResult3 <- renderDataTable({
   query <- paste("
@@ -95,8 +125,14 @@ WHERE
     'config-sdtm-3.2','<http://www.okada.jp.org/schema/config2rdf#>')
   d3 <- SPARQL(url="http://axis.md.tsukuba.ac.jp/ql/config/query",
                query=query,  ns=ns)
+  if(intermMatch() != "()") {
+    write(intermMatch(),stderr())
+    d3$results$Variable <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$Variable,ignore.case=TRUE)
+    d3$results$RuleDescription <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$RuleDescription,ignore.case=TRUE)
+  }
+  
   d3$results
-})
+},options=list(createdRow=I(dto)))
 
 
 })
