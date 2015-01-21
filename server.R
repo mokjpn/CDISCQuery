@@ -16,15 +16,16 @@ shinyServer(function(input, output) {
     else
       interm <- paste(".*",input$term,".*",sep="")
   })
-  output$searchResult1 <- renderTable({
+  output$searchResult1 <- renderDataTable({
     query <- paste("
 PREFIX mms: <http://rdf.cdisc.org/mms#>
 PREFIX cts:<http://rdf.cdisc.org/ct/schema#>
 SELECT  ?id ?SubmissionValue ?Definition ?domainsubv
 WHERE
 {
-  ?id cts:cdiscDefinition ?Definition FILTER regex(?Definition,'", interm(),"','i') .
+  ?id cts:cdiscDefinition ?Definition .
   ?id cts:cdiscSubmissionValue ?SubmissionValue .
+  FILTER ( regex(?Definition,'", interm(),"','i') || regex(?SubmissionValue, '", interm(),"','i')) .
   ?id mms:inValueDomain ?valuedomain .
   ?valuedomain cts:cdiscSubmissionValue ?domainsubv .
                    } LIMIT 300",sep="")
@@ -55,17 +56,19 @@ WHERE
     }))
     d1$results$id <- ids
     d1$results
-  }, sanitize.text.function = function(x) x)
+  },options=list(createdRow=I("function(nRow, aData,index) {$('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>'));}")))
+  #, sanitize.text.function = function(x) x)
 
-  output$searchResult2 <- renderTable({
+  output$searchResult2 <- renderDataTable({
     query <- paste("
 PREFIX mms: <http://rdf.cdisc.org/mms#>
 PREFIX cts:<http://rdf.cdisc.org/ct/schema#>
 SELECT ?id ?DataElementName ?DataElementDescription
 WHERE
 {
-  ?id  mms:dataElementDescription ?DataElementDescription FILTER regex(?DataElementDescription,'", interm(),"','i') .
-  ?id  mms:dataElementName ?DataElementName
+  ?id  mms:dataElementDescription ?DataElementDescription .
+  ?id  mms:dataElementName ?DataElementName .
+  FILTER ( regex(?DataElementDescription,'", interm(),"','i') || regex(?DataElementName, '", interm(),"','i')) .
 } LIMIT 300",sep="")
 ns <- c(
   'sdtmig-3-1-3', '<http://rdf.cdisc.org/std/sdtmig-3-1-3#>',
@@ -78,14 +81,15 @@ ns <- c(
     d2$results
   })
 
-output$searchResult3 <- renderTable({
+output$searchResult3 <- renderDataTable({
   query <- paste("
 PREFIX my: <http://www.okada.jp.org/schema/Myconfig2rdf#>
 SELECT ?ruleid ?Variable ?RuleDescription
 WHERE
 {
-  ?ruleid my:description ?RuleDescription FILTER regex(?RuleDescription,'", interm(),"','i') .
+  ?ruleid my:description ?RuleDescription .
   ?ruleid my:target ?Variable .
+  FILTER ( regex(?RuleDescription,'", interm(),"','i') || regex(?Variable, '", interm(),"','i')) .
 } LIMIT 300",sep="")
   ns <- c(
     'config-sdtm-3.2','<http://www.okada.jp.org/schema/config2rdf#>')

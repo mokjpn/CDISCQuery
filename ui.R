@@ -23,11 +23,11 @@ shinyUI(fluidPage(
     # Show a plot of the generated distribution
     mainPanel(tabsetPanel(
     tabPanel('Terminology',
-              tableOutput('searchResult1')),
+              dataTableOutput('searchResult1')),
     tabPanel('Standard', 
-              tableOutput('searchResult2')),
+              dataTableOutput('searchResult2')),
     tabPanel('Validation', 
-             tableOutput('searchResult3'))
+             dataTableOutput('searchResult3'))
     )
   , width=12))
 )
