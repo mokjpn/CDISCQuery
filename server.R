@@ -30,8 +30,8 @@ shinyServer(function(input, output) {
                 $('td:eq(1)',nRow).html(aData[1].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
                 $('td:eq(2)',nRow).html(aData[2].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
               }"), 
-              bAutoWidth=FALSE,
-              aoColumns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="80%")))
+              autoWidth=FALSE,
+              columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="80%")))
                                        
   
   
