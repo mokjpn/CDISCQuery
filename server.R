@@ -29,9 +29,10 @@ shinyServer(function(input, output) {
                 $('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
                 $('td:eq(1)',nRow).html(aData[1].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
                 $('td:eq(2)',nRow).html(aData[2].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+                $('td:eq(3)',nRow).html(aData[3].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
               }"), 
               autoWidth=FALSE,
-              columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="80%")))
+              columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="70%"), list(sWidth="10%")))
                                        
   
   
@@ -40,13 +41,14 @@ shinyServer(function(input, output) {
     query <- paste("
 PREFIX mms: <http://rdf.cdisc.org/mms#>
 PREFIX cts:<http://rdf.cdisc.org/ct/schema#>
-SELECT  ?id ?SubmissionValue ?Definition ?domainsubv ?nciCode 
+SELECT  ?id ?SubmissionValue ?Definition ?Synonyms ?domainsubv ?nciCode 
 WHERE
 {
   ?id cts:cdiscDefinition ?Definition .
   ?id cts:cdiscSubmissionValue ?SubmissionValue .
+  ?id cts:cdiscSynonyms ?Synonyms .
   ?id cts:nciCode ?nciCode .
-  FILTER ( regex(?nciCode,'", interm(),"','i') ||regex(?Definition,'", interm(),"','i') || regex(?SubmissionValue, '", interm(),"','i')) .
+  FILTER ( regex(?nciCode,'", interm(),"','i') ||regex(?Definition,'", interm(),"','i') || regex(?Synonyms, '" , interm(), "','i') || regex(?SubmissionValue, '", interm(),"','i')) .
   ?id mms:inValueDomain ?valuedomain .
   ?valuedomain cts:cdiscSubmissionValue ?domainsubv .
                    } LIMIT 300",sep="")
@@ -89,6 +91,7 @@ WHERE
     if(intermMatch() != "()") {
       d1$results$SubmissionValue <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$SubmissionValue,ignore.case=TRUE)
       d1$results$Definition <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Definition,ignore.case=TRUE)
+      d1$results$Synonyms <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Synonyms,ignore.case=TRUE)
     }
     d1$results
   },options=dto)
