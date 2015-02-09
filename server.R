@@ -25,15 +25,31 @@ shinyServer(function(input, output) {
       interm <- paste("(",input$term,")",sep="")
   })
   
-  dto <- list(createdRow=I("function(nRow, aData,index) {
+  dto_terminology <- list(createdRow=I("function(nRow, aData,index) {
                 $('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
                 $('td:eq(1)',nRow).html(aData[1].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
                 $('td:eq(2)',nRow).html(aData[2].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
                 $('td:eq(3)',nRow).html(aData[3].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+                $('td:eq(4)',nRow).html(aData[4].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
               }"), 
               autoWidth=FALSE,
-              columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="70%"), list(sWidth="10%")))
+              columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="10%"), list(sWidth="60%"), list(sWidth="10%")))
                                        
+  dto_standard <- list(createdRow=I("function(nRow, aData,index) {
+                $('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+                $('td:eq(1)',nRow).html(aData[1].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+                $('td:eq(2)',nRow).html(aData[2].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+              }"), 
+              autoWidth=FALSE,
+              columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="70%")))
+
+  dto_validation <- list(createdRow=I("function(nRow, aData,index) {
+                $('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+                $('td:eq(1)',nRow).html(aData[1].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+                $('td:eq(2)',nRow).html(aData[2].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+              }"), 
+                       autoWidth=FALSE,
+                       columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="70%")))
   
   
   output$searchResult1 <- renderDataTable({
@@ -41,7 +57,7 @@ shinyServer(function(input, output) {
     query <- paste("
 PREFIX mms: <http://rdf.cdisc.org/mms#>
 PREFIX cts:<http://rdf.cdisc.org/ct/schema#>
-SELECT  ?id ?SubmissionValue ?Definition ?Synonyms ?domainsubv ?nciCode 
+SELECT ?id ?valuedomain ?SubmissionValue ?Definition ?Synonyms ?domainsubv ?nciCode 
 WHERE
 {
   ?id cts:cdiscDefinition ?Definition .
@@ -94,7 +110,7 @@ WHERE
       d1$results$Synonyms <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Synonyms,ignore.case=TRUE)
     }
     d1$results
-  },options=dto)
+  },options=dto_terminology)
   #, sanitize.text.function = function(x) x)
   
   output$searchResult2 <- renderDataTable({
@@ -123,7 +139,7 @@ WHERE
     }
     
     d2$results
-  },options=dto)
+  },options=dto_standard)
   
   output$searchResult3 <- renderDataTable({
     query <- paste("
@@ -146,7 +162,7 @@ WHERE
     }
     
     d3$results
-  },options=dto)
+  },options=dto_validation)
   
   
 })
