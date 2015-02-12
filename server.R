@@ -7,6 +7,7 @@
 
 library(shiny)
 library(SPARQL)
+source("endpoints.R")
 
 shinyServer(function(input, output) {
   interm <- reactive({
@@ -75,7 +76,7 @@ WHERE
       'coa','<http://rdf.cdisc.org/coa-terminology#>',
       'mms','<http://rdf.cdisc.org/mms#>',
       'cts','<http://rdf.cdisc.org/ct/schema#>')
-    d1 <- SPARQL(url="http://axis.md.tsukuba.ac.jp/ql/term/query",
+    d1 <- SPARQL(url=endpoint_term,
                  query=query,  ns=ns)
     if(nrow(d1$results)>0) {
       ids <- unlist(sapply(1:nrow(d1$results), function(x) {
@@ -130,7 +131,7 @@ WHERE
       'sdtm-1-3', '<http://rdf.cdisc.org/std/sdtm-1-3#>'
     )
     
-    d2 <- SPARQL(url="http://axis.md.tsukuba.ac.jp/ql/phuse/query",
+    d2 <- SPARQL(url=endpoint_std,
                  query=query,  ns=ns)
     if(intermMatch() != "()") {
       write(intermMatch(),stderr())
@@ -153,7 +154,7 @@ WHERE
 } LIMIT 300",sep="")
     ns <- c(
       'config-sdtm-3.2','<http://www.okada.jp.org/schema/config2rdf#>')
-    d3 <- SPARQL(url="http://axis.md.tsukuba.ac.jp/ql/config/query",
+    d3 <- SPARQL(url=endpoint_config,
                  query=query,  ns=ns)
     if(intermMatch() != "()") {
       write(intermMatch(),stderr())

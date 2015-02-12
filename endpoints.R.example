@@ -1,0 +1,9 @@
+# CDISC Terminology SPARQL endpoint.
+#   RDF data can be downloaded from http://www.cancer.gov/cancertopics/cancerlibrary/terminologyresources/cdisc
+endpoint_term <- "http://example.com/ql/term/query"
+# CDISC Standards SPARQL endpoint.
+#   RDF data can be downloaded from https://github.com/phuse-org/rdf.cdisc.org/tree/master/std
+endpoint_std <- "http://example.com/ql/phuse/query"
+# OpenCDISC config file SPARQL endpoint.
+#   RDF data can be extracted by Config2RDF.xsl in this repository
+endpoint_config <- "http://example.com/ql/config/query"
