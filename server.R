@@ -40,9 +40,10 @@ shinyServer(function(input, output) {
                 $('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
                 $('td:eq(1)',nRow).html(aData[1].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
                 $('td:eq(2)',nRow).html(aData[2].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
+                $('td:eq(3)',nRow).html(aData[3].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
               }"), 
               autoWidth=FALSE,
-              columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="70%")))
+              columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="40%"), list(sWidth="40%")))
 
   dto_validation <- list(createdRow=I("function(nRow, aData,index) {
                 $('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
@@ -118,12 +119,18 @@ WHERE
     query <- paste("
 PREFIX mms: <http://rdf.cdisc.org/mms#>
 PREFIX cts:<http://rdf.cdisc.org/ct/schema#>
-SELECT ?id ?DataElementName ?DataElementDescription
+PREFIX cdiscs:<http://rdf.cdisc.org/std/schema#>
+SELECT ?id ?DataElementName ?DataElementDescription ?QuestionOrAssumption
 WHERE
 {
   ?id  mms:dataElementDescription ?DataElementDescription .
   ?id  mms:dataElementName ?DataElementName .
-  FILTER ( regex(?DataElementDescription,'", interm(),"','i') || regex(?DataElementName, '", interm(),"','i')) .
+  OPTIONAL 
+  { ?id cdiscs:questionText ?QuestionOrAssumption .}
+  OPTIONAL
+  { ?aid  cdiscs:about ?id .
+  ?aid  cdiscs:assumptionText ?QuestionOrAssumption . } 
+  FILTER ( regex(?DataElementDescription,'", interm(),"','i') || regex(?DataElementName, '", interm(),"','i') || regex(?QuestionOrAssumption, '", interm(), "','i')) .
 } LIMIT 300",sep="")
     ns <- c(
       'sdtmig-3-1-3', '<http://rdf.cdisc.org/std/sdtmig-3-1-3#>',
@@ -137,10 +144,19 @@ WHERE
       write(intermMatch(),stderr())
       d2$results$DataElementName <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementName,ignore.case=TRUE)
       d2$results$DataElementDescription <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementDescription,ignore.case=TRUE)
+      d2$results$QuestionOrAssumption <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$QuestionOrAssumption,ignore.case=TRUE)
     }
     
-    d2$results
-  },options=dto_standard)
+    qst <- d2$results$QuestionOrAssumption
+    qst[is.na(qst)] <- ""
+    results <- data.frame(Std=sapply(strsplit(d2$results$id, ":"), function(x){return(x[1])}),
+                             Name=d2$results$DataElementName, 
+                             Description=d2$results$DataElementDescription,
+                             "QuestionOrAssumptionText"=qst,
+                          stringsAsFactors=FALSE)
+     cat(str(results))
+    results
+    },options=dto_standard)
   
   output$searchResult3 <- renderDataTable({
     query <- paste("
