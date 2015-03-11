@@ -16,3 +16,7 @@ You have to set up a SPARQL Endpoint that distributes RDF representation of CDIS
 You can download RDF files from their original location and import them into your endpoint.
 
 2. Place server.R, ui.R and endpoints.R into your shiny web-app directory, and run it.
+
+## License
+
+This software is released under the MIT License, see LICENSE.txt.
