@@ -161,7 +161,7 @@ WHERE
     d2 <- SPARQL(url=endpoint_std,
                  query=query,  ns=ns)
     if(interm() != "()") {
-      write(interm(),stderr())
+      #write(interm(),stderr())
       d2$results$DataElementName <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementName,ignore.case=TRUE)
       d2$results$DataElementDescription <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementDescription,ignore.case=TRUE)
       d2$results$QuestionOrAssumption <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$QuestionOrAssumption,ignore.case=TRUE)
@@ -169,11 +169,14 @@ WHERE
     
     qst <- d2$results$QuestionOrAssumption
     qst[is.na(qst)] <- ""
-    results <- data.frame(Std=sapply(strsplit(d2$results$id, ":"), function(x){return(x[1])}),
+    if(nrow(d2$results)>0) 
+      results <- data.frame(Std=sapply(strsplit(d2$results$id, ":"), function(x){return(x[1])}),
                              Name=d2$results$DataElementName, 
                              Description=d2$results$DataElementDescription,
                              "QuestionOrAssumptionText"=qst,
                           stringsAsFactors=FALSE)
+    else
+      results <- data.frame(Std=character(0),  Name=character(0), Description=character(0),QuestionOrAssumptionText=character(0))
     #cat(str(results))
     results
     },options=dto_standard)
@@ -197,7 +200,6 @@ WHERE
       d3$results$Variable <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$Variable,ignore.case=TRUE)
       d3$results$RuleDescription <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$RuleDescription,ignore.case=TRUE)
     }
-    
     d3$results
   },options=dto_validation)
   
