@@ -18,7 +18,7 @@ shinyServer(function(input, output) {
   translateJ2E <- function(terms){
     trterms <- vector()
     for(term in terms) {
-      if(grepl("\\w+",term))
+      if(grepl("[:alnum:]+",term))
         trterms <- append(trterms, term)
       else {
         query <- paste("
