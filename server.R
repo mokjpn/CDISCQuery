@@ -11,20 +11,40 @@ source("endpoints.R")
 
 shinyServer(function(input, output) {
   interm <- reactive({
-    words <- strsplit(input$term, " +")[[1]]
-    if(length(words)>1)
-      interm <- paste(words,collapse=".*")
-    else
-      interm <- paste(".*",input$term,".*",sep="")
+    words <- translateJ2E(strsplit(input$term, " +")[[1]])
+    interm <- paste("(",paste(words,collapse="|"),")",sep="")
   })
-  
-  intermMatch <- reactive({
-    words <- strsplit(input$term, " +")[[1]]
-    if(length(words)>1)
-      interm <- paste("(",paste(words,collapse="|"),")",sep="")
-    else
-      interm <- paste("(",input$term,")",sep="")
-  })
+    
+  translateJ2E <- function(terms){
+    trterms <- vector()
+    for(term in terms) {
+      if(grepl("\\w+",term))
+        trterms <- append(trterms, term)
+      else {
+        query <- paste("
+PREFIX lsd: <http://purl.jp/bio/10/lsd/ontology/201209#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?synonymLabelJa ?synonymLabelEn WHERE {
+  ?code1 rdfs:label \"",term, "\"@ja ;
+    skos:closeMatch ?synonymJa .
+  ?synonymJa rdfs:label ?synonymLabelJa ;
+    lsd:hasEntry [lsd:hasEnglishTranslationOf ?synonymEn].
+  ?synonymEn rdfs:label ?synonymLabelEn .
+  FILTER(lang(?synonymLabelJa) = \"ja\")
+  FILTER(lang(?synonymLabelEn) = \"en\")
+} ORDER BY ?synonymLabelJa ?synonymLabelEn", sep="")
+        ns <- c(
+        'lsd','<http://purl.jp/bio/10/lsd/ontology/201209#>')
+        dtr <- SPARQL(url=endpoint_lsd,
+                     query=query,  ns=ns)
+        if(nrow(dtr$results)>0) 
+          trterms <- append(trterms, gsub("(\"|@en)","",dtr$results$synonymLabelEn))
+      }
+    }
+    return(trterms)
+  }
   
   dto_terminology <- list(createdRow=I("function(nRow, aData,index) {
                 $('td:eq(0)',nRow).html(aData[0].replace(/&lt;/g,'<').replace(/&gt;/g,'>')); 
@@ -89,7 +109,7 @@ WHERE
         code2 <- idsplit[3]
         linkcode <- paste(code1, ".", subv, sep="")
         dispcode <- paste(category, ":", subv, ".", code2, sep="")
-        dispcode <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", dispcode,ignore.case=TRUE)
+        dispcode <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", dispcode,ignore.case=TRUE)
         link <- ""        
         if(category == "sdtm")
           link <- "http://evs.nci.nih.gov/ftp1/CDISC/SDTM/SDTM%20Terminology.html#CL."
@@ -106,10 +126,10 @@ WHERE
     }
     d1$results$domainsubv <- NULL
     d1$results$nciCode <- NULL
-    if(intermMatch() != "()") {
-      d1$results$SubmissionValue <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$SubmissionValue,ignore.case=TRUE)
-      d1$results$Definition <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Definition,ignore.case=TRUE)
-      d1$results$Synonyms <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Synonyms,ignore.case=TRUE)
+    if(interm() != "()") {
+      d1$results$SubmissionValue <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$SubmissionValue,ignore.case=TRUE)
+      d1$results$Definition <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Definition,ignore.case=TRUE)
+      d1$results$Synonyms <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Synonyms,ignore.case=TRUE)
     }
     d1$results
   },options=dto_terminology)
@@ -140,11 +160,11 @@ WHERE
     
     d2 <- SPARQL(url=endpoint_std,
                  query=query,  ns=ns)
-    if(intermMatch() != "()") {
-      write(intermMatch(),stderr())
-      d2$results$DataElementName <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementName,ignore.case=TRUE)
-      d2$results$DataElementDescription <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementDescription,ignore.case=TRUE)
-      d2$results$QuestionOrAssumption <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$QuestionOrAssumption,ignore.case=TRUE)
+    if(interm() != "()") {
+      write(interm(),stderr())
+      d2$results$DataElementName <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementName,ignore.case=TRUE)
+      d2$results$DataElementDescription <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementDescription,ignore.case=TRUE)
+      d2$results$QuestionOrAssumption <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$QuestionOrAssumption,ignore.case=TRUE)
     }
     
     qst <- d2$results$QuestionOrAssumption
@@ -154,7 +174,7 @@ WHERE
                              Description=d2$results$DataElementDescription,
                              "QuestionOrAssumptionText"=qst,
                           stringsAsFactors=FALSE)
-     cat(str(results))
+    #cat(str(results))
     results
     },options=dto_standard)
   
@@ -172,10 +192,10 @@ WHERE
       'config-sdtm-3.2','<http://www.okada.jp.org/schema/config2rdf#>')
     d3 <- SPARQL(url=endpoint_config,
                  query=query,  ns=ns)
-    if(intermMatch() != "()") {
-      write(intermMatch(),stderr())
-      d3$results$Variable <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$Variable,ignore.case=TRUE)
-      d3$results$RuleDescription <- gsub(intermMatch(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$RuleDescription,ignore.case=TRUE)
+    if(interm() != "()") {
+      #write(interm(),stderr())
+      d3$results$Variable <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$Variable,ignore.case=TRUE)
+      d3$results$RuleDescription <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$RuleDescription,ignore.case=TRUE)
     }
     
     d3$results
