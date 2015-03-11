@@ -7,3 +7,6 @@ endpoint_std <- "http://example.com/ql/phuse/query"
 # OpenCDISC config file SPARQL endpoint.
 #   RDF data can be extracted by Config2RDF.xsl in this repository
 endpoint_config <- "http://example.com/ql/config/query"
+# LifeScienceDictionary SPARQL endpoint.
+#  RDF data can be downloaded from http://lsd.dbcls.jp/portal/
+endpoint_lsd <- "http://example.com/ql/lsd/query"
