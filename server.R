@@ -1,4 +1,3 @@
-
 # This is the server logic for a Shiny web application.
 # You can find out more about building applications with Shiny here:
 #
@@ -11,9 +10,14 @@ source("endpoints.R")
 
 shinyServer(function(input, output) {
   interm <- reactive({
-    words <- translateJ2E(strsplit(input$term, " +")[[1]])
-    interm <- paste("(",paste(words,collapse="|"),")",sep="")
-  })
+    words <- strsplit(input$term, "[ +]+")[[1]]
+    if(length(grep("\\+", input$term))>0) cond <- ".*" else cond <- "|"
+    ewords <- translateJ2E(words)
+    if(length(ewords) > 0) words <- ewords
+    it <- paste("(",paste(words, sep="", collapse=cond),")",sep="")
+    write(paste("interm:",it , sep=""),stderr())
+    interm <- it
+    })
     
   translateJ2E <- function(terms){
     trterms <- vector()
@@ -73,7 +77,7 @@ SELECT DISTINCT ?synonymLabelJa ?synonymLabelEn WHERE {
                        autoWidth=FALSE,
                        columns = list(list(sWidth="10%"), list(sWidth="10%"), list(sWidth="70%")))
   
-  
+  output$searchTerm <- renderText({ paste("Search Term:",interm())})
   output$searchResult1 <- renderDataTable({
     
     query <- paste("
@@ -86,9 +90,10 @@ WHERE
   ?id cts:cdiscSubmissionValue ?SubmissionValue .
   ?id cts:cdiscSynonyms ?Synonyms .
   ?id cts:nciCode ?nciCode .
-  FILTER ( regex(?nciCode,'", interm(),"','i') ||regex(?Definition,'", interm(),"','i') || regex(?Synonyms, '" , interm(), "','i') || regex(?SubmissionValue, '", interm(),"','i')) .
   ?id mms:inValueDomain ?valuedomain .
   ?valuedomain cts:cdiscSubmissionValue ?domainsubv .
+  ?valuedomain cts:nciCode ?domaincode .
+  FILTER ( regex(?nciCode,'", interm(),"','i') ||regex(?Definition,'", interm(),"','i') || regex(?Synonyms, '" , interm(), "','i') || regex(?SubmissionValue, '", interm(),"','i') || regex(?domaincode, '", interm(),"','i') || regex(?domainsubv, '", interm(),"','i')) .
                    } LIMIT 300",sep="")
     ns <- c(
       'cdash','<http://rdf.cdisc.org/cdash-terminology#>',
@@ -107,6 +112,7 @@ WHERE
         category <- idsplit[1]
         code1 <- idsplit[2]
         code2 <- idsplit[3]
+
         linkcode <- paste(code1, ".", subv, sep="")
         dispcode <- paste(category, ":", subv, ".", code2, sep="")
         dispcode <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", dispcode,ignore.case=TRUE)
@@ -126,11 +132,10 @@ WHERE
     }
     d1$results$domainsubv <- NULL
     d1$results$nciCode <- NULL
-    if(interm() != "()") {
-      d1$results$SubmissionValue <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$SubmissionValue,ignore.case=TRUE)
-      d1$results$Definition <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Definition,ignore.case=TRUE)
-      d1$results$Synonyms <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Synonyms,ignore.case=TRUE)
-    }
+    d1$results$SubmissionValue <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$SubmissionValue,ignore.case=TRUE)
+    d1$results$Definition <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Definition,ignore.case=TRUE)
+    d1$results$Synonyms <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$Synonyms,ignore.case=TRUE)
+    d1$results$valuedomain <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d1$results$valuedomain,ignore.case=TRUE)
     d1$results
   },options=dto_terminology)
   #, sanitize.text.function = function(x) x)
@@ -160,13 +165,10 @@ WHERE
     
     d2 <- SPARQL(url=endpoint_std,
                  query=query,  ns=ns)
-    if(interm() != "()") {
-      #write(interm(),stderr())
-      d2$results$DataElementName <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementName,ignore.case=TRUE)
-      d2$results$DataElementDescription <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementDescription,ignore.case=TRUE)
-      d2$results$QuestionOrAssumption <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$QuestionOrAssumption,ignore.case=TRUE)
-    }
-    
+    d2$results$DataElementName <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementName,ignore.case=TRUE)
+    d2$results$DataElementDescription <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$DataElementDescription,ignore.case=TRUE)
+    d2$results$QuestionOrAssumption <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d2$results$QuestionOrAssumption,ignore.case=TRUE)
+
     qst <- d2$results$QuestionOrAssumption
     qst[is.na(qst)] <- ""
     if(nrow(d2$results)>0) 
@@ -195,11 +197,8 @@ WHERE
       'config-sdtm-3.2','<http://www.okada.jp.org/schema/config2rdf#>')
     d3 <- SPARQL(url=endpoint_config,
                  query=query,  ns=ns)
-    if(interm() != "()") {
-      #write(interm(),stderr())
-      d3$results$Variable <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$Variable,ignore.case=TRUE)
-      d3$results$RuleDescription <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$RuleDescription,ignore.case=TRUE)
-    }
+    d3$results$Variable <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$Variable,ignore.case=TRUE)
+    d3$results$RuleDescription <- gsub(interm(),"<span style='background-color: #FFFF00'>\\1</span>", d3$results$RuleDescription,ignore.case=TRUE)
     d3$results
   },options=dto_validation)
   
