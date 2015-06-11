@@ -15,13 +15,13 @@ shinyUI(fluidPage(
   # Sidebar with a slider input for number of bins
     inputPanel(
       textInput("term",
-                  "Search term:",
-                  value = "")
-      #submitButton(text = "Search")
+                  NULL,
+                  value = ""),
+      submitButton(text = "Search")
     ),
 
     # Show a plot of the generated distribution
-    mainPanel(tabsetPanel(
+    mainPanel(p(textOutput('searchTerm')),tabsetPanel(
     tabPanel('Terminology',
               dataTableOutput('searchResult1')),
     tabPanel('Standard', 
